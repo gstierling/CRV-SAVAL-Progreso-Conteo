@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAVAL CicloRecreoVía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B5FA5;
+    --bg-deep: #073B6B;
+    --panel: #EAF2FB;
+    --ink: #0B2545;
+    --ink-soft: #45607F;
+    --accent: #F5821F;
+    --accent-dark: #C2650F;
+    --white-ish: #FFFFFF;
+    --ok-green: #2f7a3c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 85% -10%, rgba(255,255,255,0.20), transparent 45%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    font-family:'Manrope', sans-serif;
+    color:var(--ink);
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  /* --- Header / signature --- */
+  header{
+    position:relative;
+    text-align:center;
+    padding:28px 10px 22px;
+    overflow:hidden;
+  }
+  h1{
+    position:relative; z-index:1;
+    font-family:'Archivo Black', sans-serif;
+    font-size:clamp(32px, 9vw, 48px);
+    line-height:1.05;
+    margin:0;
+    color:var(--white-ish);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.18);
+  }
+
+  /* --- Date selector (dropdown propio, sin usar <select> nativo) --- */
+  .selector-card{
+    background:var(--panel);
+    border-radius:18px;
+    padding:11px 16px;
+    margin:18px 0 22px;
+    box-shadow:0 6px 18px rgba(7,59,107,0.18);
+  }
+  .selector-label{
+    font-size:13px; font-weight:800; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px; display:block;
+  }
+  .custom-select{ position:relative; }
+  .custom-select-trigger{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    appearance:none;
+    background:var(--ink);
+    border:2px solid rgba(245,130,31,0.45);
+    border-radius:12px;
+    padding:12px 14px;
+    font-family:'Archivo Black', sans-serif;
+    font-size:16px;
+    color:var(--white-ish);
+    cursor:pointer;
+    text-align:left;
+  }
+  .custom-select-trigger:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+  .custom-select-trigger .chevron{
+    width:16px; height:16px; flex-shrink:0;
+    transition:transform .15s ease;
+  }
+  .custom-select.open .custom-select-trigger .chevron{ transform:rotate(180deg); }
+  .custom-select-list{
+    position:absolute;
+    z-index:20;
+    top:calc(100% + 8px);
+    left:0; right:0;
+    max-height:260px;
+    overflow-y:auto;
+    margin:0; padding:8px;
+    list-style:none;
+    background:var(--ink);
+    border:2px solid rgba(245,130,31,0.45);
+    border-radius:14px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+  }
+  .custom-select-list[hidden]{ display:none; }
+  .custom-select-option{
+    font-family:'Archivo Black', sans-serif;
+    font-size:15px;
+    color:var(--white-ish);
+    padding:12px 12px;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .custom-select-option:hover,
+  .custom-select-option.active{
+    background:var(--accent);
+    color:var(--white-ish);
+  }
+
+  /* --- Slide-to-register bar (una sola dirección: izquierda -> derecha) --- */
+  .slider-card{ margin-bottom:8px; }
+  .slider-hint{
+    text-align:center;
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--white-ish);
+    opacity:.85;
+    margin:0 0 8px;
+  }
+  .slide-track{
+    position:relative;
+    height:84px;
+    border-radius:42px;
+    display:flex;
+    overflow:hidden;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,0.15), 0 6px 16px rgba(7,59,107,0.28);
+    touch-action:none;
+    user-select:none;
+  }
+  .slide-zone{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'Archivo Black', sans-serif;
+    font-size:20px;
+    letter-spacing:.03em;
+    transition:opacity .1s ease;
+  }
+  .slide-zone svg{ width:34px; height:34px; flex-shrink:0; }
+  .zone-seguidor{
+    background:var(--accent);
+    color:var(--white-ish);
+    justify-content:flex-start;
+    padding-left:98px;
+    opacity:.55;
+  }
+  .slide-handle{
+    position:absolute;
+    top:6px; left:6px;
+    width:72px; height:72px;
+    border-radius:50%;
+    background:var(--white-ish);
+    box-shadow:0 4px 10px rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:grab;
+    will-change:transform;
+    touch-action:none;
+  }
+  .slide-handle:active{ cursor:grabbing; }
+  .slide-handle.dragging{ transition:none; }
+  .slide-handle:not(.dragging){ transition:transform .28s cubic-bezier(.2,.8,.3,1); }
+  .slide-handle:focus-visible{ outline:3px solid var(--ink); outline-offset:3px; }
+  .slide-handle svg{ width:26px; height:26px; }
+  .slide-handle .arrows{ color:var(--ink-soft); animation:nudge 1.8s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .slide-handle .arrows{ animation:none; } }
+  @keyframes nudge{ 0%,100%{ transform:translateX(0);} 50%{ transform:translateX(4px);} }
+
+  .toast{
+    text-align:center;
+    font-weight:700;
+    font-size:15px;
+    min-height:22px;
+    margin:4px 0 18px;
+    color:var(--ok-green);
+    opacity:0;
+    transition:opacity .25s ease;
+  }
+  .toast.show{ opacity:1; }
+
+  /* --- Summary card --- */
+  .total-card{
+    background:var(--ink);
+    color:var(--white-ish);
+    border-radius:20px;
+    padding:18px 20px;
+    text-align:center;
+    margin-bottom:14px;
+    box-shadow:0 6px 18px rgba(7,59,107,0.35);
+  }
+  .total-card .label{ font-size:17px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; opacity:.8; margin-bottom:6px; }
+  .total-card .big-number{ font-family:'Archivo Black', sans-serif; font-size:clamp(55px, 17vw, 81px); color:var(--accent); }
+
+  footer{
+    text-align:center;
+    font-size:12px;
+    color:var(--white-ish);
+    opacity:.7;
+    margin-top:22px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>SAVAL<br>CicloRecreoVía</h1>
+  </header>
+
+  <div class="selector-card">
+    <label class="selector-label" id="dateSelectLabelTag">Fecha</label>
+    <div class="custom-select" id="dateSelectWrap">
+      <button type="button" class="custom-select-trigger" id="dateSelectTrigger"
+              aria-haspopup="listbox" aria-expanded="false" aria-labelledby="dateSelectLabelTag">
+        <span id="dateSelectValueText">Total (todos los registros)</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <ul class="custom-select-list" id="dateSelectList" role="listbox" hidden></ul>
+    </div>
+  </div>
+
+  <div class="slider-card">
+    <p class="slider-hint">Desliza hacia la derecha para registrar</p>
+    <div class="slide-track" id="slideTrack">
+      <div class="slide-zone zone-seguidor" id="zoneSeguidor">
+        <span>SEGUIDOR</span>
+      </div>
+      <div class="slide-handle" id="slideHandle" tabindex="0" role="slider"
+           aria-label="Deslizar hacia la derecha para registrar Seguidor"
+           aria-valuemin="0" aria-valuemax="1" aria-valuenow="0">
+        <svg class="arrows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 6 L15 12 L9 18"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="toast" id="toast"></p>
+
+  <div class="total-card">
+    <div class="label">TOTAL SEGUIDORES</div>
+    <div class="big-number" id="totalNumber">0</div>
+  </div>
+
+  <footer id="footerNote">Actualizando datos…</footer>
+
+</div>
+
+<script>
+
+  // ================= CONFIGURACIÓN =================
+  // Reemplaza esta URL por la del Web App de Apps Script publicado
+  // para la planilla de SAVAL (ver saval-apps-script.gs adjunto).
+  const CONFIG = {
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxXTkQVQVyfgPkDG4QGBkmQzsWASMhMybkNyGwYtfW37sF4sYw9EC5mRI3s2dTsGBnhsQ/exec',
+    REFRESH_MS: 30000
+  };
+  // ===================================================
+
+  let rawData = []; // { fecha: Date, tipo: 'Seguidor', id?: string }
+  let pendingRecords = []; // registros optimistas aún no confirmados por el servidor
+  let selectedValue = 'total';
+  const dateSelectWrap = document.getElementById('dateSelectWrap');
+  const dateSelectTrigger = document.getElementById('dateSelectTrigger');
+  const dateSelectValueText = document.getElementById('dateSelectValueText');
+  const dateSelectList = document.getElementById('dateSelectList');
+  const toast = document.getElementById('toast');
+
+  function showToast(msg, ok){
+    toast.textContent = msg;
+    toast.style.color = ok ? '#2f7a3c' : '#b3261e';
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 2200);
+  }
+
+  function isSunday(d){ return d.getDay() === 0; }
+
+  function monthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+  function dayKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+  function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function addOption(value, label){
+    const li = document.createElement('li');
+    li.className = 'custom-select-option';
+    li.setAttribute('role','option');
+    li.dataset.value = value;
+    li.textContent = label;
+    if(value === selectedValue){
+      li.classList.add('active');
+      dateSelectValueText.textContent = label;
+    }
+    li.addEventListener('click', function(){
+      selectedValue = value;
+      dateSelectValueText.textContent = label;
+      closeDropdown();
+      render();
+    });
+    dateSelectList.appendChild(li);
+  }
+
+  let hasAutoSelectedDefault = false;
+
+  function buildOptions(){
+    dateSelectList.innerHTML = '';
+    const availableValues = ['total'];
+
+    // Meses presentes
+    const months = new Map(); // key -> label
+    rawData.forEach(r => {
+      const k = monthKey(r.fecha);
+      if(!months.has(k)){
+        const label = capitalize(r.fecha.toLocaleDateString('es-CL', { month:'long', year:'numeric' }));
+        months.set(k, label);
+      }
+    });
+    const monthEntries = [...months.entries()].sort();
+    monthEntries.forEach(([k]) => availableValues.push('mes:'+k));
+
+    // Fechas individuales (solo domingos), ordenadas de más antigua a más reciente
+    const days = new Map();
+    rawData.filter(r => isSunday(r.fecha)).forEach(r=>{
+      const k = dayKey(r.fecha);
+      if(!days.has(k)){
+        const label = 'Domingo ' + r.fecha.toLocaleDateString('es-CL', { day:'numeric', month:'long', year:'numeric' });
+        days.set(k, label);
+      }
+    });
+    const dayEntries = [...days.entries()].sort();
+    dayEntries.forEach(([k]) => availableValues.push('fecha:'+k));
+
+    // Por defecto, la primera vez que hay datos disponibles, se selecciona
+    // automáticamente la fecha (domingo) más reciente registrada.
+    if(!hasAutoSelectedDefault && dayEntries.length > 0){
+      selectedValue = 'fecha:' + dayEntries[dayEntries.length - 1][0];
+      hasAutoSelectedDefault = true;
+    }
+
+    // Si la selección actual (propia o automática) ya no existe entre las opciones
+    // disponibles, se vuelve a "Total" como respaldo
+    if(!availableValues.includes(selectedValue)){
+      selectedValue = 'total';
+    }
+
+    // Con la selección ya definida, se renderizan las opciones
+    addOption('total', 'Total (todos los registros)');
+    monthEntries.forEach(([k,label]) => addOption('mes:'+k, label));
+    dayEntries.forEach(([k,label]) => addOption('fecha:'+k, capitalize(label)));
+  }
+
+  function openDropdown(){
+    dateSelectList.hidden = false;
+    dateSelectWrap.classList.add('open');
+    dateSelectTrigger.setAttribute('aria-expanded','true');
+  }
+  function closeDropdown(){
+    dateSelectList.hidden = true;
+    dateSelectWrap.classList.remove('open');
+    dateSelectTrigger.setAttribute('aria-expanded','false');
+  }
+  dateSelectTrigger.addEventListener('click', function(){
+    if(dateSelectList.hidden) openDropdown(); else closeDropdown();
+  });
+  document.addEventListener('click', function(e){
+    if(!dateSelectWrap.contains(e.target)) closeDropdown();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeDropdown();
+  });
+
+  function filteredData(){
+    const v = selectedValue || 'total';
+    if(v === 'total') return rawData;
+    if(v.startsWith('mes:')){
+      const k = v.slice(4);
+      return rawData.filter(r => monthKey(r.fecha) === k);
+    }
+    if(v.startsWith('fecha:')){
+      const k = v.slice(6);
+      return rawData.filter(r => dayKey(r.fecha) === k);
+    }
+    return rawData;
+  }
+
+  function render(){
+    const rows = filteredData();
+    document.getElementById('totalNumber').textContent = rows.length;
+  }
+
+  function loadData(){
+    if(!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL.indexOf('PEGA_AQUI') === 0){
+      document.getElementById('footerNote').textContent = 'Falta configurar la URL de Apps Script en CONFIG.APPS_SCRIPT_URL';
+      return;
+    }
+    const callbackName = 'savalCallback_' + Date.now();
+    window[callbackName] = function(data){
+      const serverData = (data || [])
+        .map(r => ({ fecha: new Date(r.fecha), tipo: r.tipo, id: r.id }))
+        .filter(r => !isNaN(r.fecha.getTime()) && r.tipo);
+
+      // Protección contra respuestas vacías o sospechosamente incompletas (por ejemplo,
+      // un error transitorio de red o de Apps Script): un total real de registros nunca
+      // debería reducirse de un ciclo de sincronización a otro. Si eso ocurre, se ignora
+      // esta lectura y se conservan los datos ya cargados, para no perder la fecha
+      // seleccionada ni hacer parpadear los contadores.
+      const previousConfirmedCount = rawData.length - pendingRecords.length;
+      if(serverData.length < previousConfirmedCount){
+        document.getElementById('footerNote').textContent =
+          'Última actualización: ' + new Date().toLocaleTimeString('es-CL') + ' (lectura incompleta, se reintentará)';
+        delete window[callbackName];
+        script.remove();
+        return;
+      }
+
+      // Un registro optimista se retira de "pendientes" únicamente cuando su id exacto
+      // ya aparece en los datos del servidor (no por comparar cantidades, que puede
+      // fallar y dejar registros fantasma duplicados en el dashboard).
+      const serverIds = new Set(serverData.map(r => r.id).filter(Boolean));
+      pendingRecords = pendingRecords.filter(r => !serverIds.has(r.id));
+      rawData = serverData.concat(pendingRecords);
+
+      buildOptions();
+      render();
+      document.getElementById('footerNote').textContent =
+        'Última actualización: ' + new Date().toLocaleTimeString('es-CL');
+      delete window[callbackName];
+      script.remove();
+    };
+    const script = document.createElement('script');
+    script.src = CONFIG.APPS_SCRIPT_URL + '?callback=' + callbackName + '&t=' + Date.now();
+    script.onerror = function(){
+      document.getElementById('footerNote').textContent = 'No se pudo cargar la planilla (revisa la URL de Apps Script).';
+    };
+    document.body.appendChild(script);
+  }
+
+  let slideLocked = false;
+
+  function generateId(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function registrar(tipo){
+    if(!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL.indexOf('PEGA_AQUI') === 0){
+      showToast('Falta configurar la URL de Apps Script', false);
+      return;
+    }
+    // Actualización optimista: refleja el registro de inmediato en el total,
+    // sin esperar la respuesta de red, para que no haya duda de que se registró.
+    // Lleva su propio id único, que es el mismo que se envía al servidor: así, al
+    // sincronizar, se puede confirmar con exactitud si el servidor ya lo tiene.
+    const regId = generateId();
+    const optimisticRecord = { fecha: new Date(), tipo: tipo, id: regId };
+    rawData.push(optimisticRecord);
+    pendingRecords.push(optimisticRecord);
+    buildOptions();
+    render();
+    showToast('Registrado: ' + tipo, true);
+
+    fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ tipo: tipo, id: regId })
+    })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(!data || data.ok !== true){
+        throw new Error(data && data.error ? data.error : 'El servidor no confirmó el registro');
+      }
+      // Sincroniza con la planilla poco después, por si hay otros dispositivos registrando a la vez.
+      // El propio loadData() se encarga de no descontar este registro hasta confirmar que el
+      // servidor ya lo tiene.
+      setTimeout(loadData, 4000);
+    })
+    .catch(function(err){
+      // Si falló el envío (o el servidor respondió ok:false), se revierte el conteo optimista
+      let idx = rawData.indexOf(optimisticRecord);
+      if(idx > -1) rawData.splice(idx, 1);
+      idx = pendingRecords.indexOf(optimisticRecord);
+      if(idx > -1) pendingRecords.splice(idx, 1);
+      buildOptions();
+      render();
+      showToast('No se pudo registrar' + (err && err.message ? (': ' + err.message) : ''), false);
+    });
+  }
+
+  // --- Barra deslizante (slide-to-confirm, una sola dirección: izquierda -> derecha) ---
+  const slideTrack = document.getElementById('slideTrack');
+  const slideHandle = document.getElementById('slideHandle');
+  const zoneSeguidor = document.getElementById('zoneSeguidor');
+  const THRESHOLD_RATIO = 0.82; // hay que arrastrar el 82% del recorrido para que se registre
+
+  let maxOffset = 0;
+  let dragging = false;
+  let startX = 0;
+  let currentOffset = 0;
+  let pointerId = null;
+
+  function computeMaxOffset(){
+    const trackWidth = slideTrack.clientWidth;
+    const handleWidth = slideHandle.offsetWidth;
+    maxOffset = trackWidth - handleWidth - 12; // pequeño margen interno (6px a cada lado)
+  }
+  window.addEventListener('resize', computeMaxOffset);
+
+  function setHandle(offset){
+    slideHandle.style.transform = 'translateX(' + offset + 'px)';
+    const ratio = maxOffset ? (offset / maxOffset) : 0;
+    zoneSeguidor.style.opacity = 0.55 + Math.max(0, ratio) * 0.45;
+    slideHandle.setAttribute('aria-valuenow', ratio.toFixed(2));
+  }
+
+  function resetHandle(){
+    currentOffset = 0;
+    setHandle(0);
+  }
+
+  function onPointerDown(e){
+    // Ignora toques adicionales (multitáctil, palma de la mano) mientras ya hay un arrastre en curso
+    if(slideLocked || dragging) return;
+    computeMaxOffset();
+    dragging = true;
+    pointerId = e.pointerId;
+    slideHandle.classList.add('dragging');
+    startX = e.clientX - currentOffset;
+    slideHandle.setPointerCapture(pointerId);
+  }
+
+  function onPointerMove(e){
+    if(!dragging || e.pointerId !== pointerId) return;
+    let offset = e.clientX - startX;
+    offset = Math.max(0, Math.min(maxOffset, offset));
+    currentOffset = offset;
+    setHandle(offset);
+  }
+
+  function onPointerUp(e){
+    if(!dragging || e.pointerId !== pointerId) return;
+    dragging = false;
+    pointerId = null;
+    slideHandle.classList.remove('dragging');
+    const ratio = maxOffset ? (currentOffset / maxOffset) : 0;
+
+    if(ratio >= THRESHOLD_RATIO){
+      slideLocked = true;
+      setHandle(maxOffset);
+      registrar('Seguidor');
+      setTimeout(()=>{ resetHandle(); slideLocked = false; }, 500);
+    } else {
+      resetHandle();
+    }
+  }
+
+  slideHandle.addEventListener('pointerdown', onPointerDown);
+  slideHandle.addEventListener('pointermove', onPointerMove);
+  slideHandle.addEventListener('pointerup', onPointerUp);
+  slideHandle.addEventListener('pointercancel', onPointerUp);
+
+  // Accesibilidad: flecha derecha del teclado para quien no puede arrastrar
+  slideHandle.addEventListener('keydown', function(e){
+    if(slideLocked) return;
+    if(e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' '){
+      registrar('Seguidor');
+      slideLocked = true;
+      setTimeout(()=>{ slideLocked = false; }, 500);
+    }
+  });
+
+  computeMaxOffset();
+
+  buildOptions();
+  render();
+  loadData();
+  setInterval(loadData, CONFIG.REFRESH_MS);
+
+</script>
+
+</body>
+</html>

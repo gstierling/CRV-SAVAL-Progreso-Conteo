@@ -285,8 +285,6 @@
     setTimeout(()=> toast.classList.remove('show'), 2200);
   }
 
-  function isSunday(d){ return d.getDay() === 0; }
-
   function monthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
   function dayKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 
@@ -329,12 +327,12 @@
     const monthEntries = [...months.entries()].sort();
     monthEntries.forEach(([k]) => availableValues.push('mes:'+k));
 
-    // Fechas individuales (solo domingos), ordenadas de más antigua a más reciente
+    // Fechas individuales (cualquier día en que haya registros), ordenadas de más antigua a más reciente
     const days = new Map();
-    rawData.filter(r => isSunday(r.fecha)).forEach(r=>{
+    rawData.forEach(r=>{
       const k = dayKey(r.fecha);
       if(!days.has(k)){
-        const label = 'Domingo ' + r.fecha.toLocaleDateString('es-CL', { day:'numeric', month:'long', year:'numeric' });
+        const label = capitalize(r.fecha.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' }));
         days.set(k, label);
       }
     });
@@ -475,18 +473,30 @@
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ tipo: tipo, id: regId })
     })
-    .then(function(res){ return res.json(); })
-    .then(function(data){
-      if(!data || data.ok !== true){
-        throw new Error(data && data.error ? data.error : 'El servidor no confirmó el registro');
+    .then(function(res){ return res.text(); })
+    .then(function(text){
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { data = null; }
+
+      if (data && data.ok === true) {
+        // Confirmación clara del servidor: se sincroniza poco después por si hay
+        // otros dispositivos registrando a la vez.
+        setTimeout(loadData, 4000);
+        return;
       }
-      // Sincroniza con la planilla poco después, por si hay otros dispositivos registrando a la vez.
-      // El propio loadData() se encarga de no descontar este registro hasta confirmar que el
-      // servidor ya lo tiene.
-      setTimeout(loadData, 4000);
+
+      // Respuesta ambigua (por ejemplo, Apps Script devolvió una página intermedia
+      // en vez del JSON esperado) o el servidor respondió ok:false. En ambos casos
+      // el registro puede haberse guardado igual en la planilla, así que en vez de
+      // descartarlo de inmediato, se confirma sincronizando con el servidor. Si el
+      // id realmente no llegó a la planilla, quedará marcado como pendiente hasta
+      // que se confirme en una sincronización posterior.
+      showToast('Registrado: ' + tipo + ' (confirmando con el servidor…)', true);
+      setTimeout(loadData, 3000);
     })
     .catch(function(err){
-      // Si falló el envío (o el servidor respondió ok:false), se revierte el conteo optimista
+      // Fallo real de red (sin conexión, URL incorrecta, etc.): aquí sí se revierte,
+      // porque no hay ninguna evidencia de que el servidor haya recibido el registro.
       let idx = rawData.indexOf(optimisticRecord);
       if(idx > -1) rawData.splice(idx, 1);
       idx = pendingRecords.indexOf(optimisticRecord);
@@ -501,7 +511,7 @@
   const slideTrack = document.getElementById('slideTrack');
   const slideHandle = document.getElementById('slideHandle');
   const zoneSeguidor = document.getElementById('zoneSeguidor');
-  const THRESHOLD_RATIO = 0.82; // hay que arrastrar el 82% del recorrido para que se registre
+  const THRESHOLD_RATIO = 0.5; // hay que arrastrar el 50% del recorrido para que se registre
 
   let maxOffset = 0;
   let dragging = false;
